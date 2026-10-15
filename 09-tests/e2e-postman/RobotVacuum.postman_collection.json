@@ -1,0 +1,73 @@
+{
+  "info": {
+    "name": "Robot Vacuum E2E",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "n. E2E / API tests (Postman)"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://api.robot-vacuum.example/v1" },
+    { "key": "homeId", "value": "" },
+    { "key": "robotId", "value": "" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"email\":\"user@example.com\",\"password\":\"secret\"}"
+        },
+        "url": "{{baseUrl}}/auth/login"
+      }
+    },
+    {
+      "name": "List robots",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/homes/{{homeId}}/robots"
+      }
+    },
+    {
+      "name": "Start cleaning",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"programCode\":\"auto\"}"
+        },
+        "url": "{{baseUrl}}/robots/{{robotId}}/commands/start"
+      }
+    },
+    {
+      "name": "Get jobs history",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/robots/{{robotId}}/jobs"
+      }
+    },
+    {
+      "name": "Create schedule",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"programCode\":\"auto\",\"cronExpression\":\"0 10 * * *\",\"enabled\":true}"
+        },
+        "url": "{{baseUrl}}/robots/{{robotId}}/schedules"
+      }
+    }
+  ]
+}

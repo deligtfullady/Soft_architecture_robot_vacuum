@@ -1,0 +1,339 @@
+openapi: 3.0.3
+info:
+  title: Cloud Robot Vacuum API
+  version: 1.0.0
+  description: API Gateway (Web BFF + Mobile BFF) для сервиса робота-пылесоса
+servers:
+  - url: https://api.robot-vacuum.example/v1
+tags:
+  - name: robots
+  - name: rooms
+  - name: schedules
+  - name: jobs
+  - name: service
+paths:
+  /homes/{homeId}/robots:
+    get:
+      tags: [robots]
+      summary: Список роботов дома
+      parameters:
+        - $ref: '#/components/parameters/homeId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Robot'
+    post:
+      tags: [robots]
+      summary: Подключить робота (UC-01)
+      parameters:
+        - $ref: '#/components/parameters/homeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [serialNumber]
+              properties:
+                serialNumber: { type: string }
+                name: { type: string }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Robot'
+        '409':
+          description: Already linked
+  /robots/{robotId}:
+    get:
+      tags: [robots]
+      summary: Статус робота
+      parameters:
+        - $ref: '#/components/parameters/robotId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Robot'
+    put:
+      tags: [robots]
+      summary: Обновить имя/настройки
+      parameters:
+        - $ref: '#/components/parameters/robotId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+      responses:
+        '200':
+          description: Updated
+    delete:
+      tags: [robots]
+      summary: Отвязать робота
+      parameters:
+        - $ref: '#/components/parameters/robotId'
+      responses:
+        '204':
+          description: No Content
+  /robots/{robotId}/commands/start:
+    post:
+      tags: [jobs]
+      summary: Старт уборки (UC-03)
+      parameters:
+        - $ref: '#/components/parameters/robotId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                programCode: { type: string, enum: [auto, zone, spot] }
+                roomIds:
+                  type: array
+                  items: { type: string, format: uuid }
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleaningJob'
+  /robots/{robotId}/commands/pause:
+    post:
+      tags: [jobs]
+      summary: Пауза
+      parameters:
+        - $ref: '#/components/parameters/robotId'
+      responses:
+        '202': { description: Accepted }
+  /robots/{robotId}/commands/dock:
+    post:
+      tags: [jobs]
+      summary: На базу
+      parameters:
+        - $ref: '#/components/parameters/robotId'
+      responses:
+        '202': { description: Accepted }
+  /homes/{homeId}/rooms:
+    get:
+      tags: [rooms]
+      parameters:
+        - $ref: '#/components/parameters/homeId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Room'
+    post:
+      tags: [rooms]
+      parameters:
+        - $ref: '#/components/parameters/homeId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomInput'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+  /rooms/{roomId}:
+    put:
+      tags: [rooms]
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomInput'
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [rooms]
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+  /robots/{robotId}/schedules:
+    get:
+      tags: [schedules]
+      parameters:
+        - $ref: '#/components/parameters/robotId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Schedule'
+    post:
+      tags: [schedules]
+      summary: Создать расписание (UC-04)
+      parameters:
+        - $ref: '#/components/parameters/robotId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleInput'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Schedule'
+  /schedules/{scheduleId}:
+    put:
+      tags: [schedules]
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleInput'
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [schedules]
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+  /robots/{robotId}/jobs:
+    get:
+      tags: [jobs]
+      summary: История уборок (UC-05)
+      parameters:
+        - $ref: '#/components/parameters/robotId'
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CleaningJob'
+  /robots/{robotId}/service:
+    get:
+      tags: [service]
+      summary: Сервисный статус (UC-06)
+      parameters:
+        - $ref: '#/components/parameters/robotId'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceStatus'
+components:
+  parameters:
+    homeId:
+      name: homeId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    robotId:
+      name: robotId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  schemas:
+    Robot:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        serialNumber: { type: string }
+        name: { type: string }
+        model: { type: string }
+        firmwareVersion: { type: string }
+        status: { type: string, enum: [online, offline, cleaning, docked, error] }
+        batteryPercent: { type: integer, minimum: 0, maximum: 100 }
+        lastSeenAt: { type: string, format: date-time }
+    Room:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        areaM2: { type: number }
+        floorType: { type: string }
+    RoomInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        areaM2: { type: number }
+        floorType: { type: string }
+    Schedule:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        programCode: { type: string }
+        roomIds:
+          type: array
+          items: { type: string }
+        cronExpression: { type: string }
+        enabled: { type: boolean }
+        nextRunAt: { type: string, format: date-time }
+    ScheduleInput:
+      type: object
+      required: [programCode, cronExpression]
+      properties:
+        programCode: { type: string }
+        roomIds:
+          type: array
+          items: { type: string }
+        cronExpression: { type: string }
+        enabled: { type: boolean }
+    CleaningJob:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [queued, running, paused, done, failed] }
+        programCode: { type: string }
+        areaCleanedM2: { type: number }
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: string, format: date-time }
+    ServiceStatus:
+      type: object
+      properties:
+        brushWearPercent: { type: integer }
+        filterWearPercent: { type: integer }
+        firmwareLatest: { type: string }
+        updateAvailable: { type: boolean }
